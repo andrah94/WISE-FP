@@ -179,7 +179,7 @@ class TimelineEvent(Base):
     event_type = Column(String(50))  # APPLICATION, MEETING, STATUS_CHANGE, EMAIL
     description = Column(Text)
     timestamp = Column(DateTime, default=func.now())
-    metadata = Column(Text)  # JSON for additional data
+    extra_data = Column(Text)  # JSON for additional data
 
     person = relationship("Person", back_populates="timeline_events")
 
