@@ -32,27 +32,31 @@ def get_calendly_headers():
     }
 
 
-@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
 def make_calendly_request(endpoint, params=None):
-    """Make a request to Calendly API with retry logic."""
+    """Make a request to Calendly API."""
     headers = get_calendly_headers()
     if not headers:
-        raise ValueError("CALENDLY_API_KEY not set")
+        print("CALENDLY_API_KEY not set or empty")
+        return None
 
     url = f"{CALENDLY_API_BASE}{endpoint}"
-    response = requests.get(url, headers=headers, params=params, timeout=30)
-    response.raise_for_status()
-    return response.json()
+    try:
+        response = requests.get(url, headers=headers, params=params, timeout=30)
+        if response.status_code != 200:
+            print(f"Calendly API error {response.status_code}: {response.text[:200]}")
+            return None
+        return response.json()
+    except Exception as e:
+        print(f"Calendly request error: {e}")
+        return None
 
 
 def get_current_user():
     """Get the current Calendly user info."""
-    try:
-        data = make_calendly_request('/users/me')
+    data = make_calendly_request('/users/me')
+    if data:
         return data.get('resource', {})
-    except Exception as e:
-        print(f"Error getting Calendly user: {e}")
-        return None
+    return None
 
 
 def get_scheduled_events(days_back=30, days_forward=30):

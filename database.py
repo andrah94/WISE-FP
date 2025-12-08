@@ -297,6 +297,7 @@ def get_or_create_person(session, name, email=None):
         probability=STAGE_PROBABILITIES[PersonStatus.NEW]
     )
     session.add(person)
+    session.flush()  # Flush to get the person ID before creating related records
     return person, True
 
 

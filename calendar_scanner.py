@@ -148,11 +148,12 @@ def process_calendar_event(event_data, session):
                 print(f"  → New person from calendar: {name}")
             break
 
-    # Create meeting record
+    # Create meeting record - use timezone-naive datetime
+    meeting_date = parsed['start'].replace(tzinfo=None) if parsed['start'].tzinfo else parsed['start']
     meeting = Meeting(
         person_id=person.id if person else None,
         meeting_type=meeting_type,
-        date=parsed['start'],
+        date=meeting_date,
         duration_minutes=parsed['duration_minutes'] or 60,
         source='Calendar',
         calendar_event_id=parsed['event_id'],
@@ -162,12 +163,16 @@ def process_calendar_event(event_data, session):
     session.add(meeting)
 
     # Update person's last contact if this is a past meeting
-    if person and parsed['start'] < datetime.now():
-        if not person.last_contact or parsed['start'] > person.last_contact:
-            person.last_contact = parsed['start']
+    # Make start timezone-naive for comparison
+    start_naive = parsed['start'].replace(tzinfo=None) if parsed['start'].tzinfo else parsed['start']
+    now = datetime.now()
+
+    if person and start_naive < now:
+        if not person.last_contact or start_naive > person.last_contact:
+            person.last_contact = start_naive
 
     # Add timeline event for past meetings with a person
-    if person and parsed['start'] < datetime.now():
+    if person and start_naive < now:
         timeline = TimelineEvent(
             person_id=person.id,
             event_type='MEETING',
