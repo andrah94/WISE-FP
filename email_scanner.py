@@ -1,9 +1,8 @@
 """
 Gmail API integration for scanning multiple email accounts.
 Handles OAuth authentication and email fetching for:
-- gwindom2@gmail.com
 - gwindomfinance@gmail.com
-- Wisefinancialpartners@gmail.com
+- WISEfinancialpartners@gmail.com
 """
 
 import os
@@ -30,16 +29,12 @@ SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
 
 # Email accounts configuration
 EMAIL_ACCOUNTS = {
-    'gwindom2': {
-        'email': 'gwindom2@gmail.com',
-        'token_env': 'GMAIL_TOKEN_GWINDOM2'
-    },
     'gwindomfinance': {
         'email': 'gwindomfinance@gmail.com',
         'token_env': 'GMAIL_TOKEN_GWINDOMFINANCE'
     },
     'wisefinancial': {
-        'email': 'Wisefinancialpartners@gmail.com',
+        'email': 'WISEfinancialpartners@gmail.com',
         'token_env': 'GMAIL_TOKEN_WISEFINANCIAL'
     }
 }
@@ -425,7 +420,7 @@ if __name__ == '__main__':
             # Run OAuth setup
             if len(sys.argv) < 4:
                 print("Usage: python email_scanner.py oauth <client_secrets.json> <account_key>")
-                print("Account keys: gwindom2, gwindomfinance, wisefinancial")
+                print("Account keys: gwindomfinance, wisefinancial")
                 sys.exit(1)
 
             client_secrets = sys.argv[2]
