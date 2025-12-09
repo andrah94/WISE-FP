@@ -242,6 +242,104 @@ def get_intelligent_suggestions(session):
     return suggestions[:6]
 
 
+def get_performance_projections(session):
+    """Calculate performance projections."""
+    people = session.query(Person).all()
+
+    # Current month weighted pipeline
+    current_month_weighted = sum(
+        float(p.weighted_value or 0)
+        for p in people
+        if p.status not in [PersonStatus.COLD, PersonStatus.APPROVED]
+    )
+
+    # Total pipeline
+    total_pipeline = sum(
+        float(p.estimated_commission or 0)
+        for p in people
+        if p.status not in [PersonStatus.COLD, PersonStatus.APPROVED]
+    )
+
+    # Calculate at 25% close rate
+    conservative_projection = total_pipeline * 0.25
+
+    # Analyze Adara's impact (if exists as a referral source)
+    adara_value = sum(
+        float(p.weighted_value or 0)
+        for p in people
+        if p.source and 'adara' in p.source.lower() and p.status not in [PersonStatus.COLD]
+    )
+
+    # Determine if current month is on track
+    # Average good month = $4000+
+    if current_month_weighted >= 4000:
+        status = "On Track"
+        status_class = "ontrack"
+    elif current_month_weighted >= 2500:
+        status = "Moderate"
+        status_class = "moderate"
+    else:
+        status = "Behind"
+        status_class = "behind"
+
+    return {
+        'current_month': current_month_weighted,
+        'status': status,
+        'status_class': status_class,
+        'annualized': current_month_weighted * 12,
+        'conservative': conservative_projection,
+        'adara_impact': adara_value
+    }
+
+
+def get_pipeline_stages(session):
+    """Get pipeline breakdown by stage with progress bars."""
+    people = session.query(Person).all()
+
+    stages = {
+        'SIGNATURE': {'name': '✅ Signature/Delivery (GUARANTEED)', 'prob': 100, 'color': 'green', 'people': [], 'value': 0},
+        'APPLICATION': {'name': '📋 Application/Underwriting (HIGH CONF)', 'prob': 70, 'color': 'blue', 'people': [], 'value': 0},
+        'WARM': {'name': '🔥 Warm (STRONG)', 'prob': 40, 'color': 'purple', 'people': [], 'value': 0},
+        'ACTIVE': {'name': '💼 Active (MEDIUM)', 'prob': 30, 'color': 'orange', 'people': [], 'value': 0},
+        'NEW': {'name': '🌱 New (BUILDING)', 'prob': 20, 'color': 'red', 'people': [], 'value': 0},
+        'SCHEDULED': {'name': '📅 Scheduled (POTENTIAL)', 'prob': 15, 'color': 'grey', 'people': [], 'value': 0},
+    }
+
+    # Categorize people
+    for person in people:
+        if person.status == PersonStatus.COLD:
+            continue
+
+        if person.status == PersonStatus.APPROVED or person.probability >= 100:
+            stages['SIGNATURE']['people'].append(person)
+            stages['SIGNATURE']['value'] += float(person.estimated_commission or 0)
+        elif person.status == PersonStatus.APPLICATION:
+            stages['APPLICATION']['people'].append(person)
+            stages['APPLICATION']['value'] += float(person.estimated_commission or 0)
+        elif person.status == PersonStatus.WARM:
+            stages['WARM']['people'].append(person)
+            stages['WARM']['value'] += float(person.estimated_commission or 0)
+        elif person.status == PersonStatus.ACTIVE:
+            stages['ACTIVE']['people'].append(person)
+            stages['ACTIVE']['value'] += float(person.estimated_commission or 0)
+        elif person.status == PersonStatus.SCHEDULED:
+            stages['SCHEDULED']['people'].append(person)
+            stages['SCHEDULED']['value'] += float(person.estimated_commission or 0)
+        else:  # NEW
+            stages['NEW']['people'].append(person)
+            stages['NEW']['value'] += float(person.estimated_commission or 0)
+
+    # Calculate max value for progress bar scaling
+    max_value = max((s['value'] for s in stages.values()), default=1)
+
+    # Add percentage width for each stage
+    for stage in stages.values():
+        stage['count'] = len(stage['people'])
+        stage['width'] = int((stage['value'] / max_value * 100)) if max_value > 0 else 0
+
+    return stages
+
+
 def get_monthly_revenue_heatmap(session):
     """Get last 12 months of revenue for heatmap."""
     # Get data from database
@@ -342,6 +440,12 @@ def generate_dashboard_html(session=None):
         # Get intelligent suggestions
         suggestions = get_intelligent_suggestions(session)
 
+        # Get performance projections
+        projections = get_performance_projections(session)
+
+        # Get pipeline stages
+        pipeline_stages = get_pipeline_stages(session)
+
         # Get monthly revenue heatmap
         heatmap = get_monthly_revenue_heatmap(session)
 
@@ -351,6 +455,8 @@ def generate_dashboard_html(session=None):
             metrics=metrics,
             priority_actions=priority_actions,
             suggestions=suggestions,
+            projections=projections,
+            pipeline_stages=pipeline_stages,
             heatmap=heatmap,
             last_updated=datetime.now()
         )
@@ -362,7 +468,7 @@ def generate_dashboard_html(session=None):
             session.close()
 
 
-def generate_premium_html(people, metrics, priority_actions, suggestions, heatmap, last_updated):
+def generate_premium_html(people, metrics, priority_actions, suggestions, projections, pipeline_stages, heatmap, last_updated):
     """Generate premium HTML with user's design."""
 
     # Generate command center items
@@ -472,6 +578,49 @@ def generate_premium_html(people, metrics, priority_actions, suggestions, heatma
 
     if not suggestions_html:
         suggestions_html = '<div class="suggestion-insight"><p class="suggestion-text">Add more prospects to get personalized suggestions</p></div>'
+
+    # Generate projections HTML
+    projections_html = f"""
+    <div class="projection-card">
+        <div class="projection-label">Projected This Month</div>
+        <div class="projection-value">{format_currency(projections['current_month'])}</div>
+        <div class="projection-sub">Based on weighted pipeline</div>
+        <div class="projection-status status-{projections['status_class']}">{projections['status']}</div>
+    </div>
+    <div class="projection-card">
+        <div class="projection-label">Annualized Revenue</div>
+        <div class="projection-value">{format_currency(projections['annualized'])}</div>
+        <div class="projection-sub">If you sustain current pace</div>
+        <div class="projection-status status-ontrack">Trending</div>
+    </div>
+    <div class="projection-card">
+        <div class="projection-label">At 25% Close Rate</div>
+        <div class="projection-value">{format_currency(projections['conservative'])}</div>
+        <div class="projection-sub">Conservative estimate</div>
+        <div class="projection-status status-moderate">Conservative</div>
+    </div>
+    <div class="projection-card">
+        <div class="projection-label">Adara's Impact</div>
+        <div class="projection-value">{format_currency(projections['adara_impact'])}</div>
+        <div class="projection-sub">Value from this referral source</div>
+        <div class="projection-status status-ontrack">Key Source</div>
+    </div>
+    """
+
+    # Generate pipeline stages HTML
+    pipeline_html = ""
+    for stage_key, stage in pipeline_stages.items():
+        pipeline_html += f"""
+        <div class="stage">
+            <div class="stage-header">
+                <div class="stage-name">{stage['name']}</div>
+                <div class="stage-count">{stage['count']} person{'s' if stage['count'] != 1 else ''} • {format_currency(stage['value'])}</div>
+            </div>
+            <div class="stage-bar">
+                <div class="stage-fill {stage['color']}" data-width="{stage['width']}%" style="width: {stage['width']}%;"></div>
+            </div>
+        </div>
+        """
 
     # Generate heatmap HTML
     heatmap_html = ""
@@ -800,6 +949,162 @@ def generate_premium_html(people, metrics, priority_actions, suggestions, heatma
         .risk-gold {{ color: #fbbf24; font-weight: 700; }}
         .risk-blue {{ color: #60a5fa; font-weight: 700; }}
         .risk-red {{ color: #f87171; font-weight: 700; }}
+
+        /* PROJECTIONS */
+        .projections {{
+            background: linear-gradient(135deg, rgba(30, 39, 73, 0.95) 0%, rgba(45, 53, 97, 0.95) 100%);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }}
+
+        .projection-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.25rem;
+        }}
+
+        .projection-card {{
+            background: rgba(15, 23, 42, 0.8);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            position: relative;
+            overflow: hidden;
+        }}
+
+        .projection-card::before {{
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, #60a5fa, #a78bfa);
+        }}
+
+        .projection-label {{
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 0.5rem;
+        }}
+
+        .projection-value {{
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+        }}
+
+        .projection-sub {{
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-bottom: 0.75rem;
+        }}
+
+        .projection-status {{
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }}
+
+        .projection-status.status-ontrack {{
+            background: rgba(34, 197, 94, 0.2);
+            color: #34d399;
+            border: 1px solid rgba(34, 197, 94, 0.5);
+        }}
+
+        .projection-status.status-moderate {{
+            background: rgba(96, 165, 250, 0.2);
+            color: #60a5fa;
+            border: 1px solid rgba(96, 165, 250, 0.5);
+        }}
+
+        .projection-status.status-behind {{
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.5);
+        }}
+
+        /* PIPELINE VISUALIZER */
+        .pipeline-viz {{
+            background: linear-gradient(135deg, rgba(30, 39, 73, 0.95) 0%, rgba(45, 53, 97, 0.95) 100%);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }}
+
+        .stage {{
+            margin-bottom: 1.5rem;
+        }}
+
+        .stage-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }}
+
+        .stage-name {{
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #ffffff;
+        }}
+
+        .stage-count {{
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }}
+
+        .stage-bar {{
+            background: rgba(15, 23, 42, 0.6);
+            height: 32px;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(255,255,255,0.1);
+        }}
+
+        .stage-fill {{
+            height: 100%;
+            transition: width 1s ease;
+            position: relative;
+            overflow: hidden;
+        }}
+
+        .stage-fill::after {{
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.1), rgba(255,255,255,0));
+            animation: shimmer 2s infinite;
+        }}
+
+        @keyframes shimmer {{
+            0% {{ transform: translateX(-100%); }}
+            100% {{ transform: translateX(100%); }}
+        }}
+
+        .stage-fill.green {{ background: linear-gradient(90deg, #34d399, #10b981); }}
+        .stage-fill.blue {{ background: linear-gradient(90deg, #60a5fa, #3b82f6); }}
+        .stage-fill.purple {{ background: linear-gradient(90deg, #a78bfa, #8b5cf6); }}
+        .stage-fill.orange {{ background: linear-gradient(90deg, #f59e0b, #d97706); }}
+        .stage-fill.red {{ background: linear-gradient(90deg, #f87171, #ef4444); }}
+        .stage-fill.grey {{ background: linear-gradient(90deg, #6b7280, #4b5563); }}
     </style>
 </head>
 <body>
@@ -849,6 +1154,14 @@ def generate_premium_html(people, metrics, priority_actions, suggestions, heatma
             </div>
         </div>
 
+        <!-- PERFORMANCE PROJECTIONS -->
+        <div class="projections">
+            <h2 class="section-title">📈 Performance Projections</h2>
+            <div class="projection-grid">
+                {projections_html}
+            </div>
+        </div>
+
         <!-- REVENUE HEATMAP -->
         <div class="heatmap">
             <h2 class="section-title">🔥 12-Month Revenue Heatmap</h2>
@@ -864,6 +1177,12 @@ def generate_premium_html(people, metrics, priority_actions, suggestions, heatma
                 <span style="color: #f87171;">■ Red: $0-500</span> •
                 <span style="color: #6b7280;">■ Grey: No data</span>
             </div>
+        </div>
+
+        <!-- PIPELINE STAGE VISUALIZER -->
+        <div class="pipeline-viz">
+            <h2 class="section-title">📊 Pipeline Stage Visualizer</h2>
+            {pipeline_html}
         </div>
 
         <!-- SUGGESTIONS -->
