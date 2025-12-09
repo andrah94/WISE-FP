@@ -19,6 +19,13 @@ from parsers import detect_meeting_type, normalize_phone
 # Calendly API base URL
 CALENDLY_API_BASE = 'https://api.calendly.com'
 
+# Glenn's email addresses to filter out from invitees
+GLENN_EMAILS = {
+    'gwindomfinance@gmail.com',
+    'wisefinancialpartners@gmail.com',
+    'gwindom2@gmail.com'
+}
+
 
 def get_calendly_headers():
     """Get headers for Calendly API requests."""
@@ -170,6 +177,11 @@ def process_calendly_event(event, session):
         if email:
             attendee_emails.append(email)
 
+        # Skip Glenn's own email addresses - he's not a prospect!
+        if email and email.lower() in GLENN_EMAILS:
+            continue
+
+        # Only create person records for actual prospects (not Glenn)
         if name and email:
             person, created = get_or_create_person(session, name, email)
             if created:

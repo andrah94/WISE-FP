@@ -276,8 +276,8 @@ def process_email(email_data, account_email, session):
 
             print(f"  → New application: {person.name} - ${app_data.get('face_amount', 0):,.0f}")
 
-    # Check for status updates
-    elif any(kw in subject.lower() for kw in ['approved', 'underwriting', 'pending', 'delivery']):
+    # Check for status updates (enhanced with blocker/urgency detection)
+    elif any(kw in subject.lower() for kw in ['approved', 'underwriting', 'pending', 'delivery', 'requirements', 'signature', 'additional']):
         status_data = parse_status_update_email(subject, body)
         if status_data and status_data.get('policy_number'):
             results['type'] = 'status_update'
@@ -291,16 +291,42 @@ def process_email(email_data, account_email, session):
                 new_status = status_data.get('new_status')
                 if new_status:
                     application.status = new_status
+                    application.blocker = status_data.get('blocker')  # What's blocking progress
+                    application.urgency = status_data.get('urgency')  # URGENT, HIGH, MEDIUM, LOW
+
+                    # Update based on specific status
                     if new_status == ApplicationStatus.APPROVED:
                         application.approval_date = email_date.date()
                         application.person.status = PersonStatus.APPROVED
                         application.person.probability = 100
 
+                    elif new_status == ApplicationStatus.SIGNATURE_NEEDED:
+                        # Money on the table! High priority
+                        application.person.status = PersonStatus.APPROVED
+                        application.person.probability = 100
+                        print(f"  🚨 SIGNATURE NEEDED: {application.person.name} - ${application.estimated_commission:,.0f}")
+
+                    elif new_status == ApplicationStatus.STALLED:
+                        # Application blocked - needs follow-up
+                        blocker_msg = status_data.get('blocker', 'Unknown requirements')
+                        print(f"  ⚠️ STALLED: {application.person.name} - {blocker_msg}")
+
+                    elif new_status == ApplicationStatus.DELIVERED:
+                        # Money received!
+                        from database import track_monthly_revenue
+                        application.delivered_date = email_date.date()
+                        track_monthly_revenue(session, application.id)
+                        print(f"  ✅ DELIVERED: {application.person.name} - ${application.estimated_commission:,.0f}")
+
                     # Add timeline event
+                    timeline_desc = f"Status updated to {new_status}"
+                    if status_data.get('blocker'):
+                        timeline_desc += f" - {status_data.get('blocker')}"
+
                     timeline = TimelineEvent(
                         person_id=application.person_id,
                         event_type='STATUS_CHANGE',
-                        description=f"Status updated to {new_status}",
+                        description=timeline_desc,
                         timestamp=email_date
                     )
                     session.add(timeline)
