@@ -6,12 +6,38 @@ Generates intelligent, context-aware dashboard from live data.
 import json
 from datetime import datetime, timedelta, date
 from decimal import Decimal
+import pytz
 
 from database import (
     get_session, Person, Application, Meeting, TimelineEvent, DailyMetrics, MonthlyRevenue,
-    PersonStatus, ApplicationStatus, STAGE_PROBABILITIES, calculate_daily_metrics
+    PersonStatus, ApplicationStatus, STAGE_PROBABILITIES, calculate_daily_metrics, SyncStatus
 )
 from parsers import analyze_meeting_velocity
+
+# Los Angeles timezone
+LA_TZ = pytz.timezone('America/Los_Angeles')
+
+
+def get_la_time(dt=None):
+    """Convert datetime to Los Angeles timezone."""
+    if dt is None:
+        dt = datetime.utcnow()
+
+    # If datetime is naive (no timezone), assume it's UTC
+    if dt.tzinfo is None:
+        dt = pytz.utc.localize(dt)
+
+    # Convert to LA time
+    return dt.astimezone(LA_TZ)
+
+
+def format_la_time(dt, format_str='%B %d, %Y - %I:%M %p %Z'):
+    """Format datetime in Los Angeles timezone."""
+    if dt is None:
+        return "Never"
+
+    la_time = get_la_time(dt)
+    return la_time.strftime(format_str)
 
 
 def format_currency(amount):
@@ -40,7 +66,8 @@ def get_intelligent_command_center(session):
     - High-value prospects needing attention
     """
     actions = []
-    now = datetime.now()
+    # Use LA timezone for all time calculations
+    now = get_la_time()
     tomorrow = now + timedelta(hours=24)
 
     # 1. URGENT: Signature needed (money on table!)
@@ -90,7 +117,7 @@ def get_intelligent_command_center(session):
             if velocity['momentum'] == 'hot':
                 momentum_tag = " (FAST MOVER - capitalize!)"
 
-            meeting_time = meeting.date.strftime('%I:%M %p') if meeting.date else 'TBD'
+            meeting_time = format_la_time(meeting.date, '%I:%M %p') if meeting.date else 'TBD'
             actions.append({
                 'priority': 3,
                 'type': 'scheduled',
@@ -105,7 +132,7 @@ def get_intelligent_command_center(session):
     ).all()
 
     for person in people:
-        days_since = (now - person.last_contact).days if person.last_contact else 999
+        days_since = (now - get_la_time(person.last_contact)).days if person.last_contact else 999
 
         # Check if they have future meetings scheduled
         has_future_meeting = session.query(Meeting).filter(
@@ -192,9 +219,10 @@ def get_intelligent_suggestions(session):
                     })
 
     # Find stalled prospects
+    now_la = get_la_time()
     for person in people:
         if person.status in [PersonStatus.ACTIVE, PersonStatus.WARM]:
-            days_since = (datetime.now() - person.last_contact).days if person.last_contact else 0
+            days_since = (now_la - get_la_time(person.last_contact)).days if person.last_contact else 0
 
             # Check if they have meetings but no future ones
             total_meetings = session.query(Meeting).filter(
@@ -203,7 +231,7 @@ def get_intelligent_suggestions(session):
 
             future_meetings = session.query(Meeting).filter(
                 Meeting.person_id == person.id,
-                Meeting.date > datetime.now()
+                Meeting.date > now_la
             ).count()
 
             if total_meetings > 0 and future_meetings == 0 and days_since > 3:
@@ -449,6 +477,25 @@ def generate_dashboard_html(session=None):
         # Get monthly revenue heatmap
         heatmap = get_monthly_revenue_heatmap(session)
 
+        # Get last sync times from all sources
+        sync_statuses = session.query(SyncStatus).all()
+        last_sync_time = None
+        sync_info = {}
+
+        for status in sync_statuses:
+            sync_info[status.source] = {
+                'last_sync': status.last_sync,
+                'success': status.last_success is not None
+            }
+            # Track the most recent sync time
+            if status.last_sync:
+                if last_sync_time is None or status.last_sync > last_sync_time:
+                    last_sync_time = status.last_sync
+
+        # If no sync data, use current time
+        if last_sync_time is None:
+            last_sync_time = datetime.utcnow()
+
         # Generate HTML
         html = generate_premium_html(
             people=people,
@@ -458,7 +505,8 @@ def generate_dashboard_html(session=None):
             projections=projections,
             pipeline_stages=pipeline_stages,
             heatmap=heatmap,
-            last_updated=datetime.now()
+            last_updated=last_sync_time,
+            sync_info=sync_info
         )
 
         return html
@@ -468,8 +516,17 @@ def generate_dashboard_html(session=None):
             session.close()
 
 
-def generate_premium_html(people, metrics, priority_actions, suggestions, projections, pipeline_stages, heatmap, last_updated):
+def generate_premium_html(people, metrics, priority_actions, suggestions, projections, pipeline_stages, heatmap, last_updated, sync_info=None):
     """Generate premium HTML with user's design."""
+
+    # Format sync status info for header
+    sync_status_html = ""
+    if sync_info:
+        sources = []
+        for source, info in sync_info.items():
+            status_icon = "✓" if info['success'] else "⚠"
+            sources.append(f"{status_icon} {source.title()}")
+        sync_status_html = " • ".join(sources)
 
     # Generate command center items
     command_items_html = ""
@@ -1111,7 +1168,8 @@ def generate_premium_html(people, metrics, priority_actions, suggestions, projec
     <div class="container">
         <div class="header">
             <h1>GLENN WINDOM - Operations Dashboard</h1>
-            <p class="subtitle">Real-Time Intelligence • Contract Rate: 45% • Updated: {last_updated.strftime('%B %d, %Y - %I:%M %p')}</p>
+            <p class="subtitle">Real-Time Intelligence • Contract Rate: 45% • Last Sync: {format_la_time(last_updated)}</p>
+            {f'<p class="subtitle" style="font-size: 0.85rem; margin-top: 0.5rem; opacity: 0.8;">Data Sources: {sync_status_html}</p>' if sync_status_html else ''}
         </div>
 
         <!-- COMMAND CENTER -->
