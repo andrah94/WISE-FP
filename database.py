@@ -285,10 +285,52 @@ def get_session():
 
 
 def init_db():
-    """Initialize database tables."""
+    """Initialize database tables and add any missing columns."""
     engine = get_engine()
+
+    # Create tables that don't exist
     Base.metadata.create_all(engine)
     print("Database tables created successfully")
+
+    # Add missing columns to existing tables (migrations)
+    _run_migrations(engine)
+
+
+def _run_migrations(engine):
+    """Add missing columns to existing tables."""
+    from sqlalchemy import text, inspect
+
+    inspector = inspect(engine)
+
+    # Define columns to add if missing
+    migrations = [
+        # Table: applications
+        ('applications', 'blocker', 'TEXT'),
+        ('applications', 'urgency', 'VARCHAR(20)'),
+        ('applications', 'delivered_date', 'DATE'),
+        # Table: monthly_revenue (new table columns, in case table exists)
+    ]
+
+    with engine.connect() as conn:
+        for table_name, column_name, column_type in migrations:
+            # Check if table exists
+            if table_name not in inspector.get_table_names():
+                continue
+
+            # Get existing columns for this table
+            existing_columns = [col['name'] for col in inspector.get_columns(table_name)]
+
+            if column_name not in existing_columns:
+                try:
+                    sql = text(f'ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}')
+                    conn.execute(sql)
+                    conn.commit()
+                    print(f"Added column {column_name} to {table_name}")
+                except Exception as e:
+                    # Column might already exist (race condition) or other issue
+                    print(f"Note: Could not add {column_name} to {table_name}: {e}")
+
+    print("Database migrations completed")
 
 
 def get_or_create_person(session, name, email=None):
