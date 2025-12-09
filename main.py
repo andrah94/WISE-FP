@@ -111,19 +111,22 @@ def initialize_scheduler():
 
 @app.route('/')
 def dashboard():
-    """Serve the main dashboard."""
-    global _cached_dashboard, _last_update
+    """Serve the premium static dashboard."""
+    import os
 
-    # Generate dashboard if not cached
-    if _cached_dashboard is None:
-        try:
-            _cached_dashboard = generate_dashboard_html()
-            _last_update = datetime.now()
-        except Exception as e:
-            logger.error(f"Error generating dashboard: {e}")
-            return f"<h1>Error generating dashboard</h1><p>{str(e)}</p>", 500
+    # Serve the static premium dashboard
+    static_path = os.path.join(os.path.dirname(__file__), 'static_dashboard.html')
 
-    return Response(_cached_dashboard, mimetype='text/html')
+    try:
+        with open(static_path, 'r', encoding='utf-8') as f:
+            html_content = f.read()
+        return Response(html_content, mimetype='text/html')
+    except FileNotFoundError:
+        logger.error("static_dashboard.html not found")
+        return "<h1>Dashboard not found</h1>", 500
+    except Exception as e:
+        logger.error(f"Error loading dashboard: {e}")
+        return f"<h1>Error loading dashboard</h1><p>{str(e)}</p>", 500
 
 
 @app.route('/api/refresh', methods=['POST'])

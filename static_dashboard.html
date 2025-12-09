@@ -1,0 +1,1712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glenn Windom - Operations Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0e27;
+            color: #ffffff;
+            padding: 1rem;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 0.5rem;
+            }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(-50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .container {
+            max-width: 2000px;
+            margin: 0 auto;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .header {
+            background: linear-gradient(135deg, rgba(26, 31, 58, 0.95) 0%, rgba(45, 53, 97, 0.95) 100%);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 20px;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        @media (max-width: 640px) {
+            .header {
+                padding: 1rem;
+                margin-bottom: 1.5rem;
+                border-radius: 12px;
+            }
+        }
+
+        h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            animation: slideInRight 0.8s ease-out;
+        }
+
+        @media (max-width: 640px) {
+            h1 {
+                font-size: 1.5rem;
+                margin-bottom: 0.35rem;
+            }
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 1rem;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        @media (max-width: 640px) {
+            .subtitle {
+                font-size: 0.75rem;
+            }
+        }
+
+        /* COMMAND CENTER */
+        .command-center {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(251, 191, 36, 0.15) 100%);
+            border: 2px solid rgba(251, 191, 36, 0.5);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(251, 191, 36, 0.2);
+            animation: fadeInUp 0.6s ease-out 0.2s both;
+        }
+
+        @media (max-width: 640px) {
+            .command-center {
+                padding: 1rem;
+                margin-bottom: 1.5rem;
+                border-radius: 12px;
+            }
+        }
+
+        .command-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #fbbf24;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        @media (max-width: 640px) {
+            .command-title {
+                font-size: 1.1rem;
+                margin-bottom: 1rem;
+            }
+        }
+
+        .command-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.25rem;
+        }
+
+        @media (max-width: 640px) {
+            .command-grid {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+        }
+
+        .command-item {
+            background: rgba(15, 23, 42, 0.6);
+            padding: 1.25rem;
+            border-radius: 12px;
+            border-left: 4px solid;
+            transition: all 0.3s ease;
+        }
+
+        @media (max-width: 640px) {
+            .command-item {
+                padding: 1rem;
+                border-radius: 8px;
+            }
+        }
+
+        .command-item:hover {
+            transform: translateX(5px);
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        .command-label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        @media (max-width: 640px) {
+            .command-label {
+                font-size: 0.65rem;
+                letter-spacing: 1px;
+            }
+        }
+
+        .command-text {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #ffffff;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 640px) {
+            .command-text {
+                font-size: 0.85rem;
+            }
+        }
+
+        .action-tag {
+            display: inline-block;
+            background: rgba(96, 165, 250, 0.2);
+            color: #60a5fa;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-right: 0.5rem;
+            border: 1px solid rgba(96, 165, 250, 0.3);
+        }
+
+        @media (max-width: 640px) {
+            .action-tag {
+                font-size: 0.65rem;
+                padding: 0.1rem 0.35rem;
+                margin-right: 0.35rem;
+            }
+        }
+
+        /* METRICS */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .metrics-grid {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, rgba(30, 39, 73, 0.95) 0%, rgba(45, 53, 97, 0.95) 100%);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @media (max-width: 640px) {
+            .metric-card {
+                padding: 1rem;
+                border-radius: 10px;
+            }
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        @media (max-width: 640px) {
+            .metric-label {
+                font-size: 0.65rem;
+                letter-spacing: 1px;
+            }
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #ffffff;
+        }
+
+        @media (max-width: 640px) {
+            .metric-value {
+                font-size: 1.5rem;
+            }
+        }
+
+        .metric-sub {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-top: 0.25rem;
+        }
+
+        @media (max-width: 640px) {
+            .metric-sub {
+                font-size: 0.75rem;
+            }
+        }
+
+        /* PIPELINE VISUALIZER */
+        .pipeline-viz {
+            background: linear-gradient(135deg, rgba(30, 39, 73, 0.95) 0%, rgba(45, 53, 97, 0.95) 100%);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .stage {
+            margin-bottom: 1.5rem;
+        }
+
+        .stage-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .stage-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #cbd5e1;
+        }
+
+        .stage-count {
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        .stage-bar {
+            height: 12px;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .stage-fill {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 1.5s ease-out;
+            position: relative;
+            overflow: hidden;
+            width: 0;
+        }
+
+        .stage-fill.green { background: linear-gradient(90deg, #34d399, #10b981); }
+        .stage-fill.gold { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+        .stage-fill.blue { background: linear-gradient(90deg, #60a5fa, #3b82f6); }
+        .stage-fill.red { background: linear-gradient(90deg, #f87171, #ef4444); }
+
+        /* REVENUE HEATMAP */
+        .heatmap {
+            background: linear-gradient(135deg, rgba(30, 39, 73, 0.95) 0%, rgba(45, 53, 97, 0.95) 100%);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            animation: fadeInUp 0.8s ease-out 0.6s both;
+        }
+
+        .heatmap-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 0.75rem;
+        }
+
+        @media (max-width: 768px) {
+            .heatmap-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 0.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .heatmap-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 0.4rem;
+            }
+        }
+
+        .heatmap-cell {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .heatmap-cell:hover {
+            transform: scale(1.05);
+        }
+
+        @media (max-width: 480px) {
+            .heatmap-cell {
+                border-radius: 6px;
+            }
+        }
+
+        .heatmap-cell.level-5 { background: linear-gradient(135deg, #34d399, #10b981); }
+        .heatmap-cell.level-4 { background: linear-gradient(135deg, #60a5fa, #3b82f6); }
+        .heatmap-cell.level-3 { background: linear-gradient(135deg, #a78bfa, #8b5cf6); }
+        .heatmap-cell.level-2 { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .heatmap-cell.level-1 { background: linear-gradient(135deg, #f87171, #ef4444); }
+        .heatmap-cell.level-0 { background: linear-gradient(135deg, #4b5563, #374151); }
+
+        .heatmap-month {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.9);
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        @media (max-width: 480px) {
+            .heatmap-month {
+                font-size: 0.6rem;
+                margin-bottom: 0.15rem;
+            }
+        }
+
+        .heatmap-value {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,1);
+            font-weight: 700;
+        }
+
+        @media (max-width: 480px) {
+            .heatmap-value {
+                font-size: 0.7rem;
+            }
+        }
+
+        /* SUGGESTIONS */
+        .suggestions {
+            background: linear-gradient(135deg, rgba(96, 165, 250, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+            border: 2px solid rgba(96, 165, 250, 0.4);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(96, 165, 250, 0.2);
+            animation: fadeInUp 1s ease-out 0.8s both;
+        }
+
+        .suggestions-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #60a5fa;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .suggestion-insight {
+            background: rgba(15, 23, 42, 0.6);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #60a5fa;
+        }
+
+        .suggestion-highlight {
+            color: #fbbf24;
+            font-weight: 700;
+            font-size: 1.05rem;
+            display: block;
+            margin-bottom: 0.75rem;
+        }
+
+        .suggestion-text {
+            color: #e2e8f0;
+            font-size: 0.95rem;
+        }
+
+        .suggestion-text ul {
+            margin: 0.5rem 0 0 1.25rem;
+            list-style-type: disc;
+        }
+
+        .suggestion-text li {
+            margin-bottom: 0.4rem;
+            line-height: 1.6;
+        }
+
+        /* PERFORMANCE PROJECTIONS */
+        .projections {
+            background: linear-gradient(135deg, rgba(30, 39, 73, 0.95) 0%, rgba(45, 53, 97, 0.95) 100%);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .projection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .projection-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .projection-grid {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+        }
+
+        .projection-card {
+            background: rgba(15, 23, 42, 0.6);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .projection-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(96, 165, 250, 0.5);
+        }
+
+        .projection-label {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.75rem;
+        }
+
+        .projection-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #34d399;
+            margin-bottom: 0.5rem;
+        }
+
+        .projection-sub {
+            font-size: 0.85rem;
+            color: #cbd5e1;
+        }
+
+        .projection-status {
+            display: inline-block;
+            padding: 0.4rem 0.9rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 0.75rem;
+        }
+
+        .status-ontrack {
+            background: rgba(52, 211, 153, 0.2);
+            color: #34d399;
+        }
+
+        .status-offtrack {
+            background: rgba(248, 113, 113, 0.2);
+            color: #f87171;
+        }
+
+        /* PEOPLE TABLE */
+        .people-table {
+            background: linear-gradient(135deg, rgba(30, 39, 73, 0.95) 0%, rgba(45, 53, 97, 0.95) 100%);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .risk-legend {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        .risk-legend span {
+            margin: 0 0.5rem;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        @media (max-width: 768px) {
+            table {
+                font-size: 0.75rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            table {
+                font-size: 0.65rem;
+            }
+        }
+
+        th {
+            background: rgba(15, 23, 42, 0.6);
+            padding: 0.75rem;
+            text-align: left;
+            font-size: 0.8rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 2px solid #60a5fa;
+        }
+
+        @media (max-width: 768px) {
+            th {
+                padding: 0.5rem;
+                font-size: 0.65rem;
+                letter-spacing: 0.5px;
+            }
+        }
+
+        td {
+            padding: 0.75rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            td {
+                padding: 0.5rem;
+                font-size: 0.75rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            td {
+                padding: 0.4rem;
+                font-size: 0.65rem;
+            }
+        }
+
+        tr {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        tr:hover {
+            background: rgba(96, 165, 250, 0.1);
+        }
+
+        .clickable-hint {
+            color: #64748b;
+            font-size: 0.75rem;
+            margin-left: 0.25rem;
+        }
+
+        .risk-green { color: #34d399; font-weight: 700; }
+        .risk-gold { color: #fbbf24; font-weight: 700; }
+        .risk-blue { color: #60a5fa; font-weight: 700; }
+        .risk-red { color: #f87171; font-weight: 700; }
+        .risk-grey { color: #6b7280; font-weight: 700; }
+
+        /* MODAL */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(8px);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, rgba(30, 39, 73, 0.95) 0%, rgba(45, 53, 97, 0.95) 100%);
+            backdrop-filter: blur(20px);
+            margin: 3% auto;
+            padding: 2.5rem;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            width: 90%;
+            max-width: 1100px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            animation: modalSlideIn 0.4s ease-out;
+        }
+
+        @media (max-width: 768px) {
+            .modal-content {
+                margin: 5% auto;
+                padding: 1.5rem;
+                border-radius: 16px;
+                width: 95%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .modal-content {
+                margin: 10% auto;
+                padding: 1rem;
+                border-radius: 12px;
+                width: 98%;
+            }
+        }
+
+        .close {
+            color: #94a3b8;
+            float: right;
+            font-size: 32px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+            transition: all 0.3s;
+        }
+
+        @media (max-width: 480px) {
+            .close {
+                font-size: 24px;
+            }
+        }
+
+        .modal-footer {
+            text-align: right;
+            margin-top: 1.5rem;
+        }
+
+        .btn-close {
+            background: transparent;
+            border: 1px solid #64748b;
+            color: #e5e7eb;
+            padding: 0.5rem 1rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        @media (max-width: 640px) {
+            .btn-close {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.75rem;
+            }
+        }
+
+        .btn-close:hover {
+            background: rgba(96, 165, 250, 0.2);
+            border-color: #60a5fa;
+            color: #60a5fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <div class="header">
+            <h1>GLENN WINDOM - Operations Dashboard</h1>
+            <p class="subtitle">Real-Time Intelligence • Contract Rate: 45% • Updated: December 8, 2025 - 4:43 PM PST (Los Angeles)</p>
+        </div>
+
+        <!-- 24-HOUR COMMAND CENTER -->
+        <div class="command-center">
+            <h2 class="command-title">🎯 NEXT 24 HOURS - TOP PRIORITIES</h2>
+            <div class="command-grid">
+                <div class="command-item urgent">
+                    <div class="command-label">🚨 URGENT - TODAY</div>
+                    <div class="command-text">
+                        <span class="action-tag">[CALL]</span>
+                        Get Jermaine Graham's delivery receipt signed → $1,620 commission
+                    </div>
+                </div>
+                <div class="command-item scheduled">
+                    <div class="command-label">📅 TOMORROW 8:00AM</div>
+                    <div class="command-text">
+                        <span class="action-tag">[PREP]</span>
+                        Malcolm Wilson Financial Education - NEW direct lead (premed student)
+                    </div>
+                </div>
+                <div class="command-item important">
+                    <div class="command-label">🔥 MAJOR WIN</div>
+                    <div class="command-text">
+                        <span class="action-tag">[CELEBRATE]</span>
+                        Najá Jones $1M APPLICATION submitted! (4 days from intro to app)
+                    </div>
+                </div>
+                <div class="command-item important">
+                    <div class="command-label">⚡ URGENT</div>
+                    <div class="command-text">
+                        <span class="action-tag">[CALL]</span>
+                        Schedule Malik presentation - Education was Dec 5, momentum dying
+                    </div>
+                </div>
+                <div class="command-item important">
+                    <div class="command-label">🔍 VERIFY</div>
+                    <div class="command-text">
+                        <span class="action-tag">[CHECK]</span>
+                        Did Oneika's intro call happen today? If not, reschedule immediately
+                    </div>
+                </div>
+                <div class="command-item important">
+                    <div class="command-label">🔍 TRACK DAILY</div>
+                    <div class="command-text">
+                        <span class="action-tag">[MONITOR]</span>
+                        Carlos Carbajal underwriting ($144K) - Check MyWFG for requirements
+                    </div>
+                </div>
+                <div class="command-item important">
+                    <div class="command-label">💝 HIGH IMPACT</div>
+                    <div class="command-text">
+                        <span class="action-tag">[SEND GIFT]</span>
+                        Thank Adara Johnson - $200 gift card + ask for 3 more names
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PERFORMANCE METRICS -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">12-Month Revenue</div>
+                <div class="metric-value" data-key="revenue12m" data-prefix="$">$0</div>
+                <div class="metric-sub">$3,255/month avg</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Current Pipeline</div>
+                <div class="metric-value" data-key="pipeline" data-prefix="$">$0</div>
+                <div class="metric-sub">11 people tracked</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Pending Commission</div>
+                <div class="metric-value" data-key="pendingCommission" data-prefix="$">$0</div>
+                <div class="metric-sub">Jermaine signature needed</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Total Hours</div>
+                <div class="metric-value" data-key="totalHours">0</div>
+                <div class="metric-sub">18 meetings tracked</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Revenue/Hour</div>
+                <div class="metric-value" data-key="revenuePerHour" data-prefix="$">$0</div>
+                <div class="metric-sub">Pipeline value basis</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Team Members</div>
+                <div class="metric-value" data-key="teamMembers">0</div>
+                <div class="metric-sub">Adara + Stanley (legs)</div>
+            </div>
+        </div>
+
+        <!-- PERFORMANCE PROJECTIONS -->
+        <div class="projections">
+            <h2 class="section-title">📈 Performance Projections</h2>
+            <div class="projection-grid">
+                <div class="projection-card">
+                    <div class="projection-label">Projected This Month</div>
+                    <div class="projection-value">$4,500</div>
+                    <div class="projection-sub">Based on weighted pipeline</div>
+                    <div class="projection-status status-ontrack">On Track</div>
+                </div>
+                <div class="projection-card">
+                    <div class="projection-label">Annualized @ Current Pace</div>
+                    <div class="projection-value">$54,000</div>
+                    <div class="projection-sub">Recent Q3/Q4 momentum</div>
+                    <div class="projection-status status-ontrack">Strong</div>
+                </div>
+                <div class="projection-card">
+                    <div class="projection-label">At 25% Close Rate</div>
+                    <div class="projection-value">$125,000</div>
+                    <div class="projection-sub">If conversion improves</div>
+                    <div class="projection-status status-offtrack">Not There Yet</div>
+                </div>
+                <div class="projection-card">
+                    <div class="projection-label">Adara's Impact</div>
+                    <div class="projection-value">$5,670</div>
+                    <div class="projection-sub">Pipeline from 1 person</div>
+                    <div class="projection-status status-ontrack">CRITICAL ASSET</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- REVENUE HEATMAP -->
+        <div class="heatmap">
+            <h2 class="section-title">🔥 12-Month Revenue Heatmap (Click for Details)</h2>
+            <div class="heatmap-grid">
+                <div class="heatmap-cell level-3" onclick="showMonth('Dec 2024', 3526.26, 7)" role="button" tabindex="0">
+                    <div class="heatmap-month">DEC '24</div>
+                    <div class="heatmap-value">$3.5K</div>
+                </div>
+                <div class="heatmap-cell level-1" onclick="showMonth('Jan 2025', 588.64, 11)" role="button" tabindex="0">
+                    <div class="heatmap-month">JAN '25</div>
+                    <div class="heatmap-value">$589</div>
+                </div>
+                <div class="heatmap-cell level-3" onclick="showMonth('Feb 2025', 3213.59, 8)" role="button" tabindex="0">
+                    <div class="heatmap-month">FEB '25</div>
+                    <div class="heatmap-value">$3.2K</div>
+                </div>
+                <div class="heatmap-cell level-2" onclick="showMonth('Mar 2025', 882.95, 10)" role="button" tabindex="0">
+                    <div class="heatmap-month">MAR '25</div>
+                    <div class="heatmap-value">$883</div>
+                </div>
+                <div class="heatmap-cell level-4" onclick="showMonth('Apr 2025', 5623.05, 3)" role="button" tabindex="0">
+                    <div class="heatmap-month">APR '25</div>
+                    <div class="heatmap-value">$5.6K</div>
+                </div>
+                <div class="heatmap-cell level-3" onclick="showMonth('May 2025', 2894.99, 9)" role="button" tabindex="0">
+                    <div class="heatmap-month">MAY '25</div>
+                    <div class="heatmap-value">$2.9K</div>
+                </div>
+                <div class="heatmap-cell level-1" onclick="showMonth('Jun 2025', 298.32, 12)" role="button" tabindex="0">
+                    <div class="heatmap-month">JUN '25</div>
+                    <div class="heatmap-value">$298</div>
+                </div>
+                <div class="heatmap-cell level-0" onclick="showMonth('Jul 2025', -24.00, 13)" role="button" tabindex="0">
+                    <div class="heatmap-month">JUL '25</div>
+                    <div class="heatmap-value">-$24</div>
+                </div>
+                <div class="heatmap-cell level-4" onclick="showMonth('Aug 2025', 3958.48, 6)" role="button" tabindex="0">
+                    <div class="heatmap-month">AUG '25</div>
+                    <div class="heatmap-value">$4.0K</div>
+                </div>
+                <div class="heatmap-cell level-5" onclick="showMonth('Sep 2025', 7278.86, 1)" role="button" tabindex="0">
+                    <div class="heatmap-month">SEP '25</div>
+                    <div class="heatmap-value">$7.3K</div>
+                </div>
+                <div class="heatmap-cell level-5" onclick="showMonth('Oct 2025', 6662.33, 2)" role="button" tabindex="0">
+                    <div class="heatmap-month">OCT '25</div>
+                    <div class="heatmap-value">$6.7K</div>
+                </div>
+                <div class="heatmap-cell level-4" onclick="showMonth('Nov 2025', 4157.66, 5)" role="button" tabindex="0">
+                    <div class="heatmap-month">NOV '25</div>
+                    <div class="heatmap-value">$4.2K</div>
+                </div>
+            </div>
+            <div style="margin-top: 1rem; padding: 1rem; background: rgba(15, 23, 42, 0.6); border-radius: 8px; font-size: 0.85rem; color: #94a3b8;">
+                <strong style="color: #ffffff;">Legend:</strong>
+                <span style="color: #34d399;">■ Green: $7K+</span> •
+                <span style="color: #60a5fa;">■ Blue: $4-7K</span> •
+                <span style="color: #a78bfa;">■ Purple: $2.5-4K</span> •
+                <span style="color: #f59e0b;">■ Orange: $500-2.5K</span> •
+                <span style="color: #f87171;">■ Red: $0-500</span> •
+                <span style="color: #6b7280;">■ Grey: Negative</span>
+            </div>
+        </div>
+
+        <!-- PIPELINE STAGE VISUALIZER -->
+        <div class="pipeline-viz">
+            <h2 class="section-title">📊 Pipeline Stage Visualizer</h2>
+            <div class="stage">
+                <div class="stage-header">
+                    <div class="stage-name">✅ Signature/Delivery (GUARANTEED)</div>
+                    <div class="stage-count">1 person • $1,620</div>
+                </div>
+                <div class="stage-bar">
+                    <div class="stage-fill green" data-width="100%"></div>
+                </div>
+            </div>
+            <div class="stage">
+                <div class="stage-header">
+                    <div class="stage-name">🔄 Application In Progress (HIGH CONFIDENCE)</div>
+                    <div class="stage-count">1 person • Stanley Morgan</div>
+                </div>
+                <div class="stage-bar">
+                    <div class="stage-fill gold" data-width="75%"></div>
+                </div>
+            </div>
+            <div class="stage">
+                <div class="stage-header">
+                    <div class="stage-name">🔥 Warm - Multiple Touchpoints (STRONG)</div>
+                    <div class="stage-count">2 people • $2,430</div>
+                </div>
+                <div class="stage-bar">
+                    <div class="stage-fill blue" data-width="50%"></div>
+                </div>
+            </div>
+            <div class="stage">
+                <div class="stage-header">
+                    <div class="stage-name">📞 Active - Education/BPO Scheduled (MEDIUM)</div>
+                    <div class="stage-count">2 people • $2,160</div>
+                </div>
+                <div class="stage-bar">
+                    <div class="stage-fill blue" data-width="35%"></div>
+                </div>
+            </div>
+            <div class="stage">
+                <div class="stage-header">
+                    <div class="stage-name">🆕 New - Scheduled (DEVELOPING)</div>
+                    <div class="stage-count">2 people • $2,160</div>
+                </div>
+                <div class="stage-bar">
+                    <div class="stage-fill blue" data-width="20%"></div>
+                </div>
+            </div>
+            <div class="stage">
+                <div class="stage-header">
+                    <div class="stage-name">❄️ Cold - Canceled/No Response (AT RISK)</div>
+                    <div class="stage-count">1 person • $0</div>
+                </div>
+                <div class="stage-bar">
+                    <div class="stage-fill red" data-width="10%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SUGGESTIONS -->
+        <div class="suggestions">
+            <h2 class="suggestions-title">💡 Suggestions</h2>
+
+            <div class="suggestion-insight">
+                <p class="suggestion-text suggestion-highlight">Your pipeline depends on Adara Johnson.</p>
+                <ul class="suggestion-text">
+                    <li>6 referrals = $5,670 pipeline (68% of total active pipeline)</li>
+                    <li>If she stops, your deal flow collapses</li>
+                    <li><strong>Today:</strong> Send $200 gift card + call and ask for 3 more names</li>
+                </ul>
+            </div>
+
+            <div class="suggestion-insight">
+                <p class="suggestion-text suggestion-highlight">Malcolm Wilson is your first direct lead.</p>
+                <ul class="suggestion-text">
+                    <li>Premed student, financially motivated - good potential</li>
+                    <li>Financial Education TOMORROW 8am - be sharp</li>
+                    <li><strong>Key:</strong> This proves you can generate leads beyond Adara. Track the source.</li>
+                </ul>
+            </div>
+
+            <div class="suggestion-insight">
+                <p class="suggestion-text suggestion-highlight">Carlos Carbajal has the HIGHEST face amount: $144,000.</p>
+                <ul class="suggestion-text">
+                    <li>Application #6602261042 submitted Dec 7 - in underwriting now</li>
+                    <li>$1,620 commission at 70% probability = highest weighted value</li>
+                    <li><strong>Daily:</strong> Check MyWFG for requirements. Stay in weekly contact during 60-day process.</li>
+                </ul>
+            </div>
+
+            <div class="suggestion-insight">
+                <p class="suggestion-text suggestion-highlight">Najá Jones just set a NEW RECORD: $1M app in 4 days!</p>
+                <ul class="suggestion-text">
+                    <li>Dec 4: Intro Call → Dec 8: $1M Application Submitted = 4 DAYS</li>
+                    <li>This is your NEW gold standard timeline - replicate this process</li>
+                    <li><strong>Key:</strong> Fast momentum + immediate action = million-dollar results. 50/50 split with Adara.</li>
+                </ul>
+            </div>
+
+            <div class="suggestion-insight">
+                <p class="suggestion-text suggestion-highlight">Malik is losing momentum - 3+ days since education.</p>
+                <ul class="suggestion-text">
+                    <li>Education was Dec 5, no presentation scheduled yet</li>
+                    <li>Every day you wait, close rate drops ~10%</li>
+                    <li><strong>Fix:</strong> Call him TODAY and schedule presentation for this week</li>
+                </ul>
+            </div>
+
+            <div class="suggestion-insight">
+                <p class="suggestion-text suggestion-highlight">September 2025 was your peak: $7,279.</p>
+                <ul class="suggestion-text">
+                    <li>Analyze what worked that month - specific deals? marketing?</li>
+                    <li>Q3/Q4 momentum was strong ($18K in 3 months)</li>
+                    <li><strong>Goal:</strong> Document and replicate what drove September</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- COMPLETE PEOPLE TRACKER -->
+        <div class="people-table">
+            <div class="table-header">
+                <h2 class="section-title">👥 Complete People & Meetings Tracker</h2>
+                <div class="risk-legend">
+                    <strong>Legend:</strong>
+                    <span class="risk-green">■ Guaranteed</span>
+                    <span class="risk-gold">■ Critical</span>
+                    <span class="risk-blue">■ Strong/Medium</span>
+                    <span class="risk-red">■ At Risk</span>
+                </div>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Status</th>
+                            <th>Risk</th>
+                            <th>Mtgs</th>
+                            <th>Hours</th>
+                            <th>Commission (45%)</th>
+                            <th>Prob</th>
+                            <th>Weighted</th>
+                            <th>Next Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr onclick="showPerson('jermaine')" role="button" tabindex="0">
+                            <td>
+                                <strong>Jermaine Graham</strong>
+                                <span class="clickable-hint">(details →)</span><br>
+                                <small style="color: #94a3b8;">Transamerica #6602246849</small>
+                            </td>
+                            <td>APPROVED</td>
+                            <td class="risk-green">■ GUARANTEED</td>
+                            <td>Multiple</td>
+                            <td>TBD</td>
+                            <td class="risk-green">$1,620</td>
+                            <td>100%</td>
+                            <td class="risk-green">$1,620</td>
+                            <td><span style="color: #ef4444; font-weight: 700;">GET SIGNATURE</span></td>
+                        </tr>
+                        <tr onclick="showPerson('stanley')" role="button" tabindex="0">
+                            <td>
+                                <strong>Stanley Morgan</strong>
+                                <span class="clickable-hint">(details →)</span><br>
+                                <small style="color: #a78bfa;">Partner + Client • #6602257669</small>
+                            </td>
+                            <td>APPLICATION</td>
+                            <td class="risk-gold">■ HIGH CONF</td>
+                            <td>1</td>
+                            <td>1.0</td>
+                            <td class="risk-gold">TBD</td>
+                            <td>75%</td>
+                            <td class="risk-gold">TBD</td>
+                            <td>Track underwriting</td>
+                        </tr>
+                        <tr onclick="showPerson('carlos')" role="button" tabindex="0">
+                            <td>
+                                <strong>Carlos Carbajal</strong>
+                                <span class="clickable-hint">(details →)</span><br>
+                                <small style="color: #fbbf24;">$144K Face • #6602261042</small>
+                            </td>
+                            <td>APPLICATION</td>
+                            <td class="risk-gold">■ HIGH CONF</td>
+                            <td>1</td>
+                            <td>1.0</td>
+                            <td class="risk-gold">$1,620</td>
+                            <td>70%</td>
+                            <td class="risk-gold">$1,134</td>
+                            <td><span style="color: #fbbf24;">Monitor MyWFG daily</span></td>
+                        </tr>
+                        <tr onclick="showPerson('javon')" role="button" tabindex="0">
+                            <td>
+                                <strong>Javon</strong>
+                                <span class="clickable-hint">(details →)</span><br>
+                                <small style="color: #a78bfa;">via Adara Johnson</small>
+                            </td>
+                            <td>WARM</td>
+                            <td class="risk-blue">■ STRONG</td>
+                            <td>2</td>
+                            <td>1.75</td>
+                            <td class="risk-blue">$1,350</td>
+                            <td>60%</td>
+                            <td>$810</td>
+                            <td>Follow up after BPO</td>
+                        </tr>
+                        <tr onclick="showPerson('naja')" role="button" tabindex="0">
+                            <td>
+                                <strong>Najá Jones</strong>
+                                <span class="clickable-hint">(details →)</span><br>
+                                <small style="color: #fbbf24;">$1M Face • #6602261506 • 50/50 Split</small>
+                            </td>
+                            <td>APPLICATION</td>
+                            <td class="risk-gold">■ HIGH CONF</td>
+                            <td>2</td>
+                            <td>1.5</td>
+                            <td class="risk-gold">TBD (50% split)</td>
+                            <td>70%</td>
+                            <td class="risk-gold">TBD</td>
+                            <td><span style="color: #fbbf24;">Monitor MyWFG - 4 days!</span></td>
+                        </tr>
+                        <tr onclick="showPerson('malik')" role="button" tabindex="0">
+                            <td>
+                                <strong>Malik</strong>
+                                <span class="clickable-hint">(details →)</span><br>
+                                <small style="color: #f59e0b;">via Adara • LOSING MOMENTUM</small>
+                            </td>
+                            <td>WARM</td>
+                            <td class="risk-blue">■ MEDIUM</td>
+                            <td>1</td>
+                            <td>1.0</td>
+                            <td class="risk-blue">$1,080</td>
+                            <td>35%</td>
+                            <td>$378</td>
+                            <td><span style="color: #fbbf24;">Schedule pres NOW</span></td>
+                        </tr>
+                        <tr onclick="showPerson('malcolm')" role="button" tabindex="0">
+                            <td>
+                                <strong>Malcolm Wilson</strong>
+                                <span class="clickable-hint">(details →)</span><br>
+                                <small style="color: #60a5fa;">🆕 DIRECT LEAD (not Adara)</small>
+                            </td>
+                            <td>NEW</td>
+                            <td class="risk-blue">■ MEDIUM</td>
+                            <td>1</td>
+                            <td>0</td>
+                            <td class="risk-blue">$1,080</td>
+                            <td>25%</td>
+                            <td>$270</td>
+                            <td><span style="color: #60a5fa;">Education tmrw 8am</span></td>
+                        </tr>
+                        <tr onclick="showPerson('oneika')" role="button" tabindex="0">
+                            <td>
+                                <strong>Oneika</strong>
+                                <span class="clickable-hint">(details →)</span><br>
+                                <small style="color: #a78bfa;">via Adara Johnson</small>
+                            </td>
+                            <td>NEW</td>
+                            <td class="risk-blue">■ MEDIUM</td>
+                            <td>0</td>
+                            <td>0</td>
+                            <td class="risk-blue">$1,080</td>
+                            <td>20%</td>
+                            <td>$216</td>
+                            <td><span style="color: #64748b;">Verify today's call</span></td>
+                        </tr>
+                        <tr onclick="showPerson('ajani')" role="button" tabindex="0">
+                            <td>
+                                <strong>Ajani</strong>
+                                <span class="clickable-hint">(details →)</span><br>
+                                <small style="color: #a78bfa;">via Adara Johnson</small>
+                            </td>
+                            <td>SCHEDULED</td>
+                            <td class="risk-blue">■ MEDIUM</td>
+                            <td>0</td>
+                            <td>0</td>
+                            <td class="risk-blue">$1,080</td>
+                            <td>15%</td>
+                            <td>$162</td>
+                            <td><span style="color: #60a5fa;">FRI 1pm call</span></td>
+                        </tr>
+                        <tr onclick="showPerson('aaliyah')" role="button" tabindex="0">
+                            <td>
+                                <strong>Aaliyah</strong>
+                                <span class="clickable-hint">(details →)</span><br>
+                                <small style="color: #a78bfa;">via Adara Johnson</small>
+                            </td>
+                            <td>CANCELED</td>
+                            <td class="risk-red">■ AT RISK</td>
+                            <td>0</td>
+                            <td>0</td>
+                            <td class="risk-grey">$0</td>
+                            <td>5%</td>
+                            <td>$0</td>
+                            <td><span style="color: #f87171;">RE-ENGAGE</span></td>
+                        </tr>
+                        <tr onclick="showPerson('adara')" role="button" tabindex="0" style="background: rgba(167, 139, 250, 0.1);">
+                            <td>
+                                <strong>Adara Johnson</strong>
+                                <span class="clickable-hint">(details →)</span><br>
+                                <small style="color: #a78bfa;">⭐ TOP REFERRAL LEG</small>
+                            </td>
+                            <td>PARTNER</td>
+                            <td class="risk-gold">■ CRITICAL</td>
+                            <td>7</td>
+                            <td>5.25</td>
+                            <td style="color: #a78bfa; font-weight: 700;">$5,670</td>
+                            <td>-</td>
+                            <td style="color: #a78bfa; font-weight: 700;">$5,670</td>
+                            <td><span style="color: #fbbf24; font-weight: 700;">THANK + ASK</span></td>
+                        </tr>
+                        <tr style="background: rgba(96, 165, 250, 0.1); font-weight: 700;">
+                            <td><strong>TOTALS</strong></td>
+                            <td>10 People</td>
+                            <td>-</td>
+                            <td>17</td>
+                            <td>11.5</td>
+                            <td style="color: #34d399;">$9,990</td>
+                            <td>-</td>
+                            <td style="color: #34d399;">$3,888</td>
+                            <td>-</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div id="modalBody"></div>
+            <div class="modal-footer">
+                <button class="btn-close" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CENTRALIZED METRICS
+        const metrics = {
+            revenue12m: 39061,
+            pipeline: 9990,
+            pendingCommission: 1620,
+            totalHours: 12.5,
+            revenuePerHour: 799,
+            teamMembers: 2
+        };
+
+        // COUNT-UP ANIMATION
+        function animateValue(element, start, end, duration, prefix = '') {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const value = Math.floor(progress * (end - start) + start);
+                element.innerText = prefix + value.toLocaleString();
+                if (progress < 1) window.requestAnimationFrame(step);
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        window.addEventListener('load', () => {
+            document.querySelectorAll('.metric-value').forEach(el => {
+                const key = el.getAttribute('data-key');
+                const target = metrics[key];
+                const prefix = el.getAttribute('data-prefix') || '';
+                animateValue(el, 0, target, 2000, prefix);
+            });
+
+            setTimeout(() => {
+                document.querySelectorAll('.stage-fill').forEach(el => {
+                    const width = el.getAttribute('data-width') || '0%';
+                    el.style.width = width;
+                });
+            }, 300);
+        });
+
+        // MODAL PEOPLE DATA
+        const peopleData = {
+            jermaine: {
+                name: "Jermaine Graham",
+                app: "Transamerica #6602246849",
+                email: "jermaineg.coj@gmail.com",
+                phone: "580-699-5468",
+                company: "Children of Joy Learning Academy",
+                title: "Executive Director",
+                status: "APPROVED - AWAITING DELIVERY RECEIPT SIGNATURE",
+                monthly: 300,
+                annual: 3600,
+                commission: 1620,
+                riskLevel: "GREEN - GUARANTEED",
+                timeline: [
+                    "Dec 3: Policy approved (non-tobacco rating)",
+                    "Dec 3: Client accepted $300/month",
+                    "Dec 3: Bank confirmed (Arvest -1381)",
+                    "Dec 5: Carrier follow-up call",
+                    "Dec 7: Updated illustration sent",
+                    "Dec 7: Transamerica case #00617334 active",
+                    "PENDING: Delivery receipt signature"
+                ],
+                nextAction: "Call Jermaine TODAY. Schedule signature meeting. This is $1,620 sitting on the table.",
+                notes: "Ready to close. Just needs signature on delivery receipt."
+            },
+            stanley: {
+                name: "Stanley Morgan",
+                app: "Transamerica #6602257669",
+                email: "stanleymorgan89@gmail.com",
+                phone: "+1 310-307-9681",
+                status: "DUAL ROLE: Business Partner + Personal Client Application",
+                riskLevel: "GOLD - HIGH CONFIDENCE",
+                timeline: [
+                    "Dec 3: Business Partner Coaching (60 min)",
+                    "Dec 7: Glenn confirmed proceeding with THIS application",
+                    "Dec 7: Transamerica case #00617330 active",
+                    "PENDING: Underwriting decision"
+                ],
+                nextAction: "Track underwriting progress. When approved, use as case study for team recruitment.",
+                notes: "Dual income stream - override as partner + commission as client. This is your duplication model."
+            },
+            carlos: {
+                name: "Carlos Carbajal",
+                app: "Transamerica #6602261042",
+                email: "Application #6602261042",
+                phone: "See MyWFG",
+                status: "APPLICATION SUBMITTED - 70% probability",
+                product: "Financial Foundation IUL II 2025 (California)",
+                faceAmount: "$144,000 (HIGHEST in pipeline!)",
+                commission: 1620,
+                weighted: 1134,
+                riskLevel: "GOLD - HIGH CONFIDENCE (app submitted)",
+                timeline: [
+                    "Dec 7: Application received by Transamerica ✓",
+                    "Dec 9-11: Initial review (1-3 business days)",
+                    "Next 10-60 days: Full underwriting process",
+                    "File closure date: Feb 5, 2026",
+                    "Status updates every 10 calendar days"
+                ],
+                meetings: [
+                    "Pre-application: At least 1 meeting completed"
+                ],
+                totalHours: 1.0,
+                nextAction: "🔍 TRACK DAILY: Check MyWFG for outstanding requirements. Client may need Authorization Form if APS required.",
+                notes: "$144K face amount = HIGHEST in entire pipeline! Application already in underwriting. Watch for medical exam requirements or additional forms. Stay in weekly contact with Carlos during underwriting."
+            },
+            javon: {
+                name: "Javon",
+                email: "javonpayne1@gmail.com",
+                phone: "+1 562-400-6731",
+                referral: "Adara Johnson (LEG)",
+                status: "WARM - 60% probability",
+                monthly: 250,
+                commission: 1350,
+                weighted: 810,
+                riskLevel: "BLUE - STRONG",
+                meetings: [
+                    "Dec 3: Financial Education (60 min) ✓",
+                    "Dec 6: Business Partner Opportunity (45 min) ✓"
+                ],
+                totalHours: 1.75,
+                nextAction: "Follow up after BPO - assess interest in insurance AND team opportunity.",
+                notes: "Most engaged prospect. Interested in products + team. High value."
+            },
+            naja: {
+                name: "Najá Jones",
+                app: "Transamerica #6602261506",
+                email: "najajones456@gmail.com",
+                phone: "+1 484-429-8461",
+                referral: "Adara Johnson (LEG) - 50/50 Split",
+                status: "APPLICATION SUBMITTED - $1M Face Amount - 70% probability",
+                product: "Financial Foundation IUL II 2024 GPT",
+                faceAmount: "$1,000,000.00",
+                commissionSplit: "50% Glenn / 50% Adara Johnson (D7I63)",
+                commission: "TBD (50% split)",
+                weighted: "TBD",
+                riskLevel: "GOLD - HIGH CONFIDENCE (app submitted Dec 8)",
+                timeline: [
+                    "Dec 4: Introductory Call (30 min) ✓",
+                    "Dec 8: Financial Education (60 min) ✓",
+                    "Dec 8: APPLICATION SUBMITTED ($1M) ✓",
+                    "Dec 9-11: Initial review (1-3 business days)",
+                    "File closure date: Feb 6, 2026"
+                ],
+                meetings: [
+                    "Dec 4: Intro Call",
+                    "Dec 8: Education + Application Same Day"
+                ],
+                totalHours: 1.5,
+                nextAction: "🔍 TRACK DAILY: Monitor MyWFG for requirements. 4-day close! Lightning fast.",
+                notes: "⚡ RECORD BREAKER: Intro (Dec 4) → App ($1M) (Dec 8) = 4 DAYS TOTAL! This is your new gold standard. $1M face amount with Adara 50/50 split."
+            },
+            malik: {
+                name: "Malik",
+                email: "cwilliamsiii99@gmail.com",
+                phone: "+1 919-798-0230",
+                referral: "Adara Johnson (LEG)",
+                status: "WARM - LOSING MOMENTUM - 35% probability (dropped from 40%)",
+                monthly: 200,
+                commission: 1080,
+                weighted: 378,
+                riskLevel: "BLUE - MEDIUM (momentum declining)",
+                meetings: [
+                    "Dec 5: Financial Education (60 min) ✓"
+                ],
+                totalHours: 1.0,
+                nextAction: "🚨 URGENT: Call TODAY. Schedule presentation THIS WEEK. It's been 3+ days since education.",
+                notes: "Ready for presentation but momentum is dying. Every day you wait kills your close rate ~10%."
+            },
+            malcolm: {
+                name: "Malcolm Wilson",
+                email: "malcolmcarwilson@gmail.com",
+                phone: "+1 857-260-1425",
+                referral: "DIRECT LEAD (not from Adara)",
+                status: "NEW - 25% probability",
+                monthly: 200,
+                commission: 1080,
+                weighted: 270,
+                riskLevel: "BLUE - MEDIUM potential",
+                meetings: [
+                    "Dec 9: Financial Education @ 11am ET (8am PT) - TOMORROW"
+                ],
+                totalHours: 0,
+                nextAction: "Prep for tomorrow's 8am education session. Be sharp - first direct lead.",
+                notes: "🆕 NEW: Premed student looking for ways to make money. Motivated by financial need. This proves you can generate leads beyond Adara. Track the source to replicate."
+            },
+            oneika: {
+                name: "Oneika",
+                email: "oneikacee@gmail.com",
+                phone: "+1 239-391-1985",
+                referral: "Adara Johnson (LEG)",
+                status: "NEW - Status unclear - 20% probability",
+                monthly: 200,
+                commission: 1080,
+                weighted: 216,
+                riskLevel: "BLUE - MEDIUM potential",
+                meetings: [
+                    "Dec 8 @ 9:30am: Introductory Call - SCHEDULED TODAY"
+                ],
+                totalHours: 0,
+                nextAction: "⚠️ VERIFY: Did today's 9:30am intro call happen? If not, reschedule immediately.",
+                notes: "Intro call was scheduled for today but not showing in calendar. Check status and follow up."
+            },
+            ajani: {
+                name: "Ajani",
+                email: "eyesonzion@tutanota.com",
+                phone: "+1 747-214-3552",
+                referral: "Adara Johnson (LEG)",
+                status: "NEW - Scheduled - 15% probability",
+                monthly: 200,
+                commission: 1080,
+                weighted: 162,
+                riskLevel: "BLUE - MEDIUM potential",
+                meetings: [
+                    "Dec 13 @ 1:00pm: Introductory Call - SCHEDULED FRIDAY"
+                ],
+                totalHours: 0,
+                nextAction: "Prep materials for Friday 1pm intro.",
+                notes: "Future prospect. Intro call next Friday."
+            },
+            aaliyah: {
+                name: "Aaliyah",
+                email: "maaliyah38@yahoo.com",
+                phone: "+1 561-388-2516",
+                referral: "Adara Johnson (LEG)",
+                status: "COLD - Canceled - 5% probability",
+                monthly: 0,
+                commission: 0,
+                weighted: 0,
+                riskLevel: "RED - AT RISK",
+                meetings: [
+                    "Dec 6: Financial Education - CANCELED (Reason: Unavailable)"
+                ],
+                totalHours: 0,
+                nextAction: "Send warm re-engagement email: 'Hey Aaliyah, I know things got busy. Would love to reschedule...'",
+                notes: "Canceled last minute. Not lost yet - needs warm follow-up."
+            },
+            adara: {
+                name: "Adara Johnson",
+                email: "johnson.adara5@gmail.com",
+                status: "⭐ TOP REFERRAL LEG - Licensed Agent on Team",
+                role: "Business Development Partner",
+                strategy: "Generates leads from warm market → Glenn presents/closes → She gets team credit",
+                pipelineValue: 5670,
+                referrals: 6,
+                riskLevel: "GOLD - ABSOLUTELY CRITICAL",
+                meetings: [
+                    "Brought 6 referrals (Javon, Malik, Najá, Oneika, Ajani, Aaliyah)",
+                    "Attended 7 meetings as guest (~5.25 hours)"
+                ],
+                totalHours: 5.25,
+                nextAction: "🚨 CRITICAL: (1) Send $200 gift card TODAY. (2) Schedule call next week. (3) Ask for 3 more names. (4) Discuss what's working.",
+                notes: "#1 ASSET: 68% of active pipeline comes from her. If she stops, deal flow collapses. Nurture aggressively."
+            }
+        };
+
+        function showPerson(id) {
+            const p = peopleData[id];
+            let html = `
+                <h2 style="font-size: 2rem; color: #ffffff; margin-bottom: 0.5rem;">${p.name}</h2>
+                <p style="color: #94a3b8; font-size: 1.1rem; margin-bottom: 2rem;">${p.status}</p>
+            `;
+
+            if (p.app) html += `<p style="color: #60a5fa; margin-bottom: 1rem;"><strong>Application:</strong> ${p.app}</p>`;
+            if (p.role) html += `<p style="color: #a78bfa; margin-bottom: 1rem; font-weight: 600;">${p.role}</p>`;
+            if (p.strategy) html += `<p style="color: #cbd5e1; margin-bottom: 2rem; line-height: 1.6;"><strong>Strategy:</strong> ${p.strategy}</p>`;
+
+            html += `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem;">`;
+
+            if (p.email) html += `<div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 8px;"><div style="font-size: 0.7rem; color: #94a3b8; margin-bottom: 0.5rem;">EMAIL</div><div style="font-size: 0.9rem; color: #ffffff;">${p.email}</div></div>`;
+            if (p.phone) html += `<div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 8px;"><div style="font-size: 0.7rem; color: #94a3b8; margin-bottom: 0.5rem;">PHONE</div><div style="font-size: 0.9rem; color: #ffffff;">${p.phone}</div></div>`;
+            if (p.totalHours !== undefined) html += `<div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 8px;"><div style="font-size: 0.7rem; color: #94a3b8; margin-bottom: 0.5rem;">HOURS</div><div style="font-size: 1.3rem; color: #60a5fa; font-weight: 700;">${p.totalHours}</div></div>`;
+            if (p.commission) html += `<div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 8px; border: 2px solid #34d399;"><div style="font-size: 0.7rem; color: #94a3b8; margin-bottom: 0.5rem;">COMMISSION (45%)</div><div style="font-size: 1.3rem; color: #34d399; font-weight: 700;">$${p.commission.toLocaleString()}</div></div>`;
+            if (p.pipelineValue) html += `<div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 8px; border: 2px solid #a78bfa;"><div style="font-size: 0.7rem; color: #94a3b8; margin-bottom: 0.5rem;">PIPELINE VALUE</div><div style="font-size: 1.3rem; color: #a78bfa; font-weight: 700;">$${p.pipelineValue.toLocaleString()}</div></div>`;
+
+            html += `</div>`;
+
+            if (p.riskLevel) {
+                html += `<div style="background: rgba(15, 23, 42, 0.6); padding: 1.25rem; border-radius: 12px; margin-bottom: 2rem; border-left: 4px solid #60a5fa;">
+                    <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.5rem;">RISK LEVEL</div>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #ffffff;">${p.riskLevel}</div>
+                </div>`;
+            }
+
+            if (p.timeline) {
+                html += `<div style="margin-bottom: 2rem;"><h3 style="color: #ffffff; margin-bottom: 1rem;">Timeline</h3>`;
+                p.timeline.forEach(item => {
+                    html += `<div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 8px; margin-bottom: 0.5rem; border-left: 3px solid #60a5fa;">
+                        <div style="font-size: 0.9rem; color: #cbd5e1;">${item}</div>
+                    </div>`;
+                });
+                html += `</div>`;
+            }
+
+            if (p.meetings) {
+                html += `<div style="margin-bottom: 2rem;"><h3 style="color: #ffffff; margin-bottom: 1rem;">Meetings</h3>`;
+                p.meetings.forEach(m => {
+                    html += `<div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 8px; margin-bottom: 0.5rem; border-left: 3px solid #60a5fa;">
+                        <div style="font-size: 0.9rem; color: #cbd5e1;">${m}</div>
+                    </div>`;
+                });
+                html += `</div>`;
+            }
+
+            if (p.nextAction) {
+                html += `<div style="background: rgba(251, 191, 36, 0.15); border: 2px solid rgba(251, 191, 36, 0.4); padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem;">
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #fbbf24; margin-bottom: 0.75rem;">📌 NEXT ACTION</div>
+                    <div style="color: #cbd5e1; line-height: 1.6;">${p.nextAction}</div>
+                </div>`;
+            }
+
+            if (p.notes) {
+                html += `<div style="background: rgba(15, 23, 42, 0.6); padding: 1.25rem; border-radius: 12px; border-left: 3px solid #60a5fa;">
+                    <h3 style="color: #60a5fa; margin-bottom: 0.75rem;">📝 Notes</h3>
+                    <p style="color: #cbd5e1; line-height: 1.6;">${p.notes}</p>
+                </div>`;
+            }
+
+            document.getElementById('modalBody').innerHTML = html;
+            document.getElementById('modal').style.display = 'block';
+        }
+
+        function showMonth(month, revenue, rank) {
+            let analysis = '', action = '', color = '';
+
+            if (month === 'Sep 2025') {
+                analysis = 'BEST MONTH EVER: $7,279. This is 124% above average.';
+                action = '🚨 CRITICAL: Analyze what happened. Document and replicate.';
+                color = '#34d399';
+            } else if (month === 'Jul 2025') {
+                analysis = 'ONLY NEGATIVE MONTH: -$24. Likely chargeback/fee.';
+                action = '⚠️ ACTION: Investigate and prevent future issues.';
+                color = '#f87171';
+            } else {
+                analysis = `Rank ${rank} of 12 months. Revenue: $${revenue.toLocaleString()}.`;
+                action = 'Review for patterns.';
+                color = '#60a5fa';
+            }
+
+            const html = `
+                <h2 style="font-size: 2rem; color: #ffffff; margin-bottom: 0.5rem;">${month}</h2>
+                <p style="color: #94a3b8; font-size: 1.1rem; margin-bottom: 2rem;">Rank: #${rank} of 12 months</p>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                    <div style="background: rgba(15, 23, 42, 0.6); padding: 1.25rem; border-radius: 12px; border: 2px solid ${color};">
+                        <div style="font-size: 0.7rem; color: #94a3b8; margin-bottom: 0.5rem;">REVENUE</div>
+                        <div style="font-size: 1.8rem; color: ${color}; font-weight: 800;">$${revenue.toLocaleString()}</div>
+                    </div>
+                    <div style="background: rgba(15, 23, 42, 0.6); padding: 1.25rem; border-radius: 12px;">
+                        <div style="font-size: 0.7rem; color: #94a3b8; margin-bottom: 0.5rem;">VS AVERAGE</div>
+                        <div style="font-size: 1.8rem; color: #ffffff; font-weight: 800;">${((revenue / 3255.09 - 1) * 100).toFixed(0)}%</div>
+                    </div>
+                    <div style="background: rgba(15, 23, 42, 0.6); padding: 1.25rem; border-radius: 12px;">
+                        <div style="font-size: 0.7rem; color: #94a3b8; margin-bottom: 0.5rem;">RANK</div>
+                        <div style="font-size: 1.8rem; color: #ffffff; font-weight: 800;">#${rank}</div>
+                    </div>
+                </div>
+
+                <div style="background: rgba(96, 165, 250, 0.1); border-left: 4px solid #60a5fa; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                    <h3 style="color: #60a5fa; margin-bottom: 1rem;">📊 Analysis</h3>
+                    <p style="color: #cbd5e1; line-height: 1.6;">${analysis}</p>
+                </div>
+
+                <div style="background: rgba(251, 191, 36, 0.15); border: 2px solid rgba(251, 191, 36, 0.4); padding: 1.5rem; border-radius: 12px;">
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #fbbf24; margin-bottom: 0.75rem;">🚀 ACTION</div>
+                    <p style="color: #cbd5e1; line-height: 1.6;">${action}</p>
+                </div>
+            `;
+
+            document.getElementById('modalBody').innerHTML = html;
+            document.getElementById('modal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target == document.getElementById('modal')) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>
