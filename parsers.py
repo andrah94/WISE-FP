@@ -141,11 +141,14 @@ def parse_application_email(subject, body):
 def parse_status_update_email(subject, body):
     """
     Parse status update emails (approved, underwriting, etc.)
+    Enhanced to detect STALLED and SIGNATURE_NEEDED states.
     """
     result = {
         'policy_number': None,
         'new_status': None,
-        'insured_name': None
+        'insured_name': None,
+        'blocker': None,  # What's blocking progress
+        'urgency': None   # LOW, MEDIUM, HIGH, URGENT
     }
 
     clean_body = clean_html(body) if '<' in body else body
@@ -166,17 +169,66 @@ def parse_status_update_email(subject, body):
             result['policy_number'] = match.group(1)
             break
 
-    # Determine status
-    if 'approved' in lower_text or 'approval' in lower_text:
+    # Intelligent status detection with priority order
+    # 1. SIGNATURE_NEEDED (highest priority - money on the table!)
+    if any(keyword in lower_text for keyword in ['delivery receipt', 'signature needed', 'sign and return', 'please sign']):
+        result['new_status'] = 'SIGNATURE_NEEDED'
+        result['blocker'] = 'Delivery receipt signature required'
+        result['urgency'] = 'URGENT'
+
+    # 2. STALLED (additional requirements blocking progress)
+    elif any(keyword in lower_text for keyword in ['additional requirements', 'requirements needed', 'outstanding requirements', 'action required']):
+        result['new_status'] = 'STALLED'
+        result['urgency'] = 'HIGH'
+
+        # Extract what's needed
+        requirement_patterns = [
+            r"(?:need|require|request)(?:s|ed)?[:\s]+(.+?)(?:\n|$|\.)",
+            r"authorization form",
+            r"medical (?:exam|records)",
+            r"bank (?:information|details|statement)",
+            r"driver'?s? license",
+            r"attending physician'?s? statement|aps",
+            r"additional information",
+            r"proof of insurability"
+        ]
+
+        blockers = []
+        for pattern in requirement_patterns:
+            matches = re.findall(pattern, combined_text, re.IGNORECASE)
+            blockers.extend(matches)
+
+        if blockers:
+            result['blocker'] = ', '.join(set(blockers[:3]))  # Top 3 unique items
+        else:
+            result['blocker'] = 'Additional requirements needed (check email)'
+
+    # 3. APPROVED
+    elif 'approved' in lower_text or 'approval' in lower_text:
         result['new_status'] = 'APPROVED'
+        result['urgency'] = 'MEDIUM'
+        result['blocker'] = None
+
+    # 4. UNDERWRITING
     elif 'underwriting' in lower_text:
         result['new_status'] = 'UNDERWRITING'
-    elif 'pending' in lower_text:
-        result['new_status'] = 'SUBMITTED'
+        result['urgency'] = 'LOW'
+
+    # 5. DELIVERED (money received!)
     elif 'delivered' in lower_text or 'delivery' in lower_text:
         result['new_status'] = 'DELIVERED'
+        result['urgency'] = 'LOW'  # Done!
+
+    # 6. DECLINED
     elif 'declined' in lower_text or 'rejected' in lower_text:
         result['new_status'] = 'DECLINED'
+        result['urgency'] = 'MEDIUM'
+        result['blocker'] = 'Application declined'
+
+    # 7. SUBMITTED/PENDING
+    elif 'pending' in lower_text or 'received' in lower_text:
+        result['new_status'] = 'SUBMITTED'
+        result['urgency'] = 'LOW'
 
     # Extract name
     name_patterns = [
@@ -459,3 +511,71 @@ def calculate_commission(face_amount, product_type=None):
     commission = annual_premium * 0.45  # 45% first-year commission
 
     return Decimal(str(round(commission, 2)))
+
+
+def analyze_meeting_velocity(meetings, person_status=None):
+    """
+    Analyze meeting patterns to detect momentum.
+
+    Args:
+        meetings: List of meeting objects with 'date' attribute
+        person_status: Current person status (optional)
+
+    Returns:
+        dict with velocity insights
+    """
+    if not meetings or len(meetings) < 2:
+        return {
+            'velocity': 'unknown',
+            'insight': 'Need more meetings to analyze velocity',
+            'days_per_meeting': None,
+            'momentum': 'neutral'
+        }
+
+    # Sort meetings by date
+    sorted_meetings = sorted(meetings, key=lambda m: m.date if hasattr(m, 'date') else m)
+
+    # Calculate days between meetings
+    gaps = []
+    for i in range(len(sorted_meetings) - 1):
+        date1 = sorted_meetings[i].date if hasattr(sorted_meetings[i], 'date') else sorted_meetings[i]
+        date2 = sorted_meetings[i+1].date if hasattr(sorted_meetings[i+1], 'date') else sorted_meetings[i+1]
+        gap = (date2 - date1).days
+        gaps.append(gap)
+
+    avg_gap = sum(gaps) / len(gaps) if gaps else 0
+
+    # Determine velocity
+    if avg_gap < 5:
+        velocity = 'fast'
+        momentum = 'hot'
+        insight = f"FAST MOVER: {len(meetings)} meetings in {(sorted_meetings[-1].date - sorted_meetings[0].date).days} days"
+    elif avg_gap < 10:
+        velocity = 'moderate'
+        momentum = 'warm'
+        insight = f"Moderate pace: ~{int(avg_gap)} days between meetings"
+    else:
+        velocity = 'slow'
+        momentum = 'cooling'
+        insight = f"LOSING MOMENTUM: {int(avg_gap)} day gaps between meetings"
+
+    # Check if there's a future meeting scheduled
+    from datetime import datetime
+    now = datetime.now()
+    future_meetings = [m for m in sorted_meetings if (m.date if hasattr(m, 'date') else m) > now]
+
+    if not future_meetings and sorted_meetings:
+        last_meeting = sorted_meetings[-1].date if hasattr(sorted_meetings[-1], 'date') else sorted_meetings[-1]
+        days_since = (now - last_meeting).days
+        if days_since > 7:
+            momentum = 'stalled'
+            insight = f"⚠️ STALLED: {days_since} days since last meeting, no follow-up scheduled"
+
+    return {
+        'velocity': velocity,
+        'insight': insight,
+        'days_per_meeting': int(avg_gap) if avg_gap > 0 else None,
+        'momentum': momentum,
+        'total_meetings': len(meetings),
+        'has_future_booking': len(future_meetings) > 0
+    }

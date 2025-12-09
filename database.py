@@ -26,8 +26,11 @@ class PersonStatus:
 class ApplicationStatus:
     SUBMITTED = 'SUBMITTED'
     UNDERWRITING = 'UNDERWRITING'
+    STALLED = 'STALLED'  # Requirements needed - blocking progress
     APPROVED = 'APPROVED'
+    SIGNATURE_NEEDED = 'SIGNATURE_NEEDED'  # Delivery receipt needed - money on table!
     DELIVERED = 'DELIVERED'
+    DECLINED = 'DECLINED'
 
 # Stage probabilities
 STAGE_PROBABILITIES = {
@@ -112,8 +115,11 @@ class Application(Base):
     annual_premium = Column(Numeric(12, 2))
     estimated_commission = Column(Numeric(12, 2))
     status = Column(String(50), default=ApplicationStatus.SUBMITTED)
+    blocker = Column(Text)  # What's blocking progress (e.g., "Authorization form needed")
+    urgency = Column(String(20))  # LOW, MEDIUM, HIGH, URGENT
     submitted_date = Column(Date)
     approval_date = Column(Date)
+    delivered_date = Column(Date)  # When money actually received
     file_closure_date = Column(Date)
     created_at = Column(DateTime, default=func.now())
     email_source = Column(String(255))  # Which email account it came from
@@ -204,6 +210,22 @@ class DailyMetrics(Base):
     new_applications = Column(Integer, default=0)
     approved_applications = Column(Integer, default=0)
     created_at = Column(DateTime, default=func.now())
+
+
+class MonthlyRevenue(Base):
+    """Monthly revenue tracking for heatmap."""
+    __tablename__ = 'monthly_revenue'
+
+    id = Column(Integer, primary_key=True)
+    month = Column(Date, unique=True)  # First day of month (e.g., 2025-01-01)
+    revenue = Column(Numeric(12, 2), default=0)  # Actual commission received
+    deals_closed = Column(Integer, default=0)  # Number of delivered applications
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    __table_args__ = (
+        Index('idx_monthly_revenue_month', 'month'),
+    )
 
 
 class ProcessedEmail(Base):
@@ -398,4 +420,35 @@ def update_sync_status(session, source, success=True, error_message=None, items_
         status.error_message = error_message
 
     status.items_processed = items_processed
+    session.commit()
+
+
+def track_monthly_revenue(session, application_id):
+    """
+    Track monthly revenue when an application is delivered.
+    Called when application status changes to DELIVERED.
+    """
+    from datetime import date
+    from calendar import monthrange
+
+    app = session.query(Application).get(application_id)
+    if not app or not app.delivered_date or not app.estimated_commission:
+        return
+
+    # Get the first day of the month when delivered
+    delivered_month = date(app.delivered_date.year, app.delivered_date.month, 1)
+
+    # Get or create monthly revenue record
+    monthly_rev = session.query(MonthlyRevenue).filter(
+        MonthlyRevenue.month == delivered_month
+    ).first()
+
+    if not monthly_rev:
+        monthly_rev = MonthlyRevenue(month=delivered_month)
+        session.add(monthly_rev)
+
+    # Add to revenue
+    monthly_rev.revenue = (monthly_rev.revenue or Decimal('0')) + app.estimated_commission
+    monthly_rev.deals_closed = (monthly_rev.deals_closed or 0) + 1
+
     session.commit()
