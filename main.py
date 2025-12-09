@@ -21,6 +21,9 @@ from calendar_scanner import scan_calendar
 from calendly_scanner import scan_calendly
 from dashboard_generator import generate_dashboard_html
 
+# Import migration function
+from migrate_database import run_migration
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -278,6 +281,16 @@ def create_app():
         logger.info("Database initialized")
     except Exception as e:
         logger.error(f"Database initialization error: {e}")
+
+    # Run database migration
+    try:
+        logger.info("Running database migration...")
+        if run_migration():
+            logger.info("Database migration completed successfully")
+        else:
+            logger.warning("Database migration had issues (see logs above)")
+    except Exception as e:
+        logger.error(f"Database migration error: {e}")
 
     # Run initial sync
     try:
