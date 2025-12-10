@@ -186,7 +186,7 @@ def generate_dashboard_html(session=None):
         # Today's meetings
         for meeting in today_meetings[:3]:  # Show up to 3 meetings
             meeting_time = format_la_time(meeting.date, '%I:%M %p')
-            person_name = meeting.person.name if meeting.person else meeting.attendee_name or "Unknown"
+            person_name = meeting.person.name if meeting.person else "Unknown"
             meeting_type = meeting.meeting_type or "Meeting"
             command_items.append({
                 'type': 'scheduled',
@@ -271,16 +271,13 @@ def generate_dashboard_html(session=None):
         meetings_html = ""
         for meeting in today_meetings:
             meeting_time = format_la_time(meeting.date, '%I:%M %p')
-            person_name = meeting.person.name if meeting.person else meeting.attendee_name or "Unknown"
+            person_name = meeting.person.name if meeting.person else "Unknown"
             meeting_type = meeting.meeting_type or "Meeting"
-            zoom_link = meeting.zoom_link or ""
+            source = meeting.source or ""
 
-            zoom_btn = ""
-            if zoom_link:
-                zoom_btn = f'''
-                <a href="{zoom_link}" class="zoom-btn" target="_blank">
-                  <span class="zoom-icon">📹</span> Join Zoom
-                </a>'''
+            source_badge = ""
+            if source:
+                source_badge = f'<span class="meeting-source">via {source}</span>'
 
             meetings_html += f'''
             <div class="meeting-card glass-dark">
@@ -288,7 +285,7 @@ def generate_dashboard_html(session=None):
               <div class="meeting-info">
                 <h4>{person_name}</h4>
                 <p class="meeting-type">{meeting_type}</p>
-                {zoom_btn}
+                {source_badge}
               </div>
             </div>'''
 
@@ -940,6 +937,7 @@ section {{ margin-bottom: 1rem; }}
 .meeting-info p {{ font-size: 0.75rem; color: var(--text-gray); margin-bottom: 0.2rem; }}
 .meeting-type {{ font-size: 0.7rem; color: var(--text-muted); }}
 .meeting-type.gold {{ color: var(--gold); }}
+.meeting-source {{ font-size: 0.65rem; color: var(--text-muted); font-style: italic; }}
 
 .zoom-btn {{
   display: inline-flex;
