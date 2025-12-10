@@ -20,6 +20,7 @@ from email_scanner import scan_all_accounts
 from calendar_scanner import scan_calendar
 from calendly_scanner import scan_calendly
 from dashboard_generator import generate_dashboard_html
+from migrate_database import run_migration
 
 # Configure logging
 logging.basicConfig(
@@ -111,22 +112,16 @@ def initialize_scheduler():
 
 @app.route('/')
 def dashboard():
-    """Serve the premium static dashboard."""
-    import os
-
-    # Serve the static premium dashboard
-    static_path = os.path.join(os.path.dirname(__file__), 'static_dashboard.html')
-
+    """Serve the dynamically generated premium dashboard."""
     try:
-        with open(static_path, 'r', encoding='utf-8') as f:
-            html_content = f.read()
+        # Generate fresh dashboard with live data
+        html_content = generate_dashboard_html()
         return Response(html_content, mimetype='text/html')
-    except FileNotFoundError:
-        logger.error("static_dashboard.html not found")
-        return "<h1>Dashboard not found</h1>", 500
     except Exception as e:
-        logger.error(f"Error loading dashboard: {e}")
-        return f"<h1>Error loading dashboard</h1><p>{str(e)}</p>", 500
+        logger.error(f"Error generating dashboard: {e}")
+        import traceback
+        traceback.print_exc()
+        return f"<h1>Error generating dashboard</h1><pre>{str(e)}</pre>", 500
 
 
 @app.route('/api/refresh', methods=['POST'])
@@ -281,6 +276,16 @@ def create_app():
         logger.info("Database initialized")
     except Exception as e:
         logger.error(f"Database initialization error: {e}")
+
+    # Run database migration to add missing columns
+    try:
+        logger.info("Running database migration...")
+        if run_migration():
+            logger.info("Database migration completed successfully")
+        else:
+            logger.warning("Database migration had issues (see logs above)")
+    except Exception as e:
+        logger.error(f"Database migration error: {e}")
 
     # Run initial sync
     try:
